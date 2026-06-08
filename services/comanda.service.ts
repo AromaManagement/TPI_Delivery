@@ -22,10 +22,9 @@ export const comandaService = {
     items: { plato: any; cantidad: number }[],
   ): Promise<Comanda> => {
     try {
-      // Send order to backend if API is connected
       const body = {
         clienteId,
-        detalle: items.map((i) => ({
+        detalles: items.map((i) => ({
           platoId: i.plato.id,
           cantidad: i.cantidad,
         })),

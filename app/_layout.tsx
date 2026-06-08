@@ -1,12 +1,16 @@
-import React, { useEffect } from "react";
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider,
+} from "@react-navigation/native";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import React, { useEffect } from "react";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAuthStore } from "../store/authStore";
 import { comandaService } from "../services/comanda.service";
+import { useAuthStore } from "../store/authStore";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -25,7 +29,8 @@ export default function RootLayout() {
       } else {
         const user = useAuthStore.getState().user;
         if (user) {
-          comandaService.getActiveOrder(user.id)
+          comandaService
+            .getActiveOrder()
             .then((order) => {
               if (order) {
                 router.replace("/(tabs)/seguir-pedido" as any);
@@ -51,7 +56,10 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal", title: "Modal" }} />
+        <Stack.Screen
+          name="modal"
+          options={{ presentation: "modal", title: "Modal" }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

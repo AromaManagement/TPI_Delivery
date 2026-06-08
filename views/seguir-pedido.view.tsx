@@ -1,14 +1,14 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  StyleSheet,
-  View,
-  Text,
+  Dimensions,
   SafeAreaView,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-  Dimensions,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { Comanda } from "../models";
 
@@ -21,38 +21,15 @@ interface SeguirPedidoViewProps {
 
 export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
   // Extract coordinate data
-  const comApp = order.comandaAplicacion;
-  const recorrido = comApp?.recorridos?.[0];
-  const estadoRecorrido = recorrido?.estado || "PENDIENTE";
   const estadoComanda = order.estadoComanda;
 
   // Origin (Restaurant)
   let originLat = -32.8897;
-  let originLng = -68.8450;
-  
+  let originLng = -68.845;
+
   // Destination (Customer)
   let destLat = -32.8943;
   let destLng = -68.8385;
-
-  // Current driver location (defaults to origin)
-  let driverLat = originLat;
-  let driverLng = originLng;
-
-  if (recorrido?.coordIn) {
-    const parts = recorrido.coordIn.split(",");
-    originLat = parseFloat(parts[0]);
-    originLng = parseFloat(parts[1]);
-  }
-  if (recorrido?.coordFin) {
-    const parts = recorrido.coordFin.split(",");
-    destLat = parseFloat(parts[0]);
-    destLng = parseFloat(parts[1]);
-  }
-  if (recorrido?.updatedAt) {
-    const parts = recorrido.updatedAt.split(",");
-    driverLat = parseFloat(parts[0]);
-    driverLng = parseFloat(parts[1]);
-  }
 
   // Map coordinate translation onto 2D coordinate box (width: MAP_WIDTH, height: MAP_HEIGHT)
   const MAP_HEIGHT = 220;
@@ -79,8 +56,9 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
   const homeX = lngToX(destLng);
   const homeY = latToY(destLat);
 
-  const driverX = lngToX(driverLng);
-  const driverY = latToY(driverLat);
+  // TODO fix
+  const driverX = lngToX(destLng);
+  const driverY = latToY(destLat);
 
   // Status descriptive text
   let statusTitle = "Pedido recibido";
@@ -89,17 +67,17 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
 
   if (estadoComanda === "EN_COCINA") {
     statusTitle = "Preparando tu comida";
-    statusDesc = "El chef Gordon Ramsey está cocinando tu plato...";
+    statusDesc = "El chef está cocinando tu plato...";
     progressStep = 2;
-  } else if (estadoComanda === "LISTO" && estadoRecorrido === "PENDIENTE") {
+  } else if (estadoComanda === "LISTO") {
     statusTitle = "Comida Lista";
     statusDesc = "Tu comida está lista. Asignando un repartidor...";
     progressStep = 2;
-  } else if (estadoRecorrido === "EN_CAMINO") {
+  } else if (estadoComanda === "EN_CAMINO") {
     statusTitle = "Pedido en Camino";
     statusDesc = "El repartidor está llevando tu pedido a domicilio.";
     progressStep = 3;
-  } else if (estadoRecorrido === "ENTREGADO") {
+  } else if (estadoComanda === "ENTREGADO") {
     statusTitle = "Pedido Entregado";
     statusDesc = "¡Buen provecho! Tu pedido fue entregado.";
     progressStep = 4;
@@ -116,7 +94,10 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Real Interactive Map Box */}
         <View style={styles.mapContainer}>
           <MapView
@@ -195,38 +176,74 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
                     progressStep === 1
                       ? "0%"
                       : progressStep === 2
-                      ? "33%"
-                      : progressStep === 3
-                      ? "66%"
-                      : "100%",
+                        ? "33%"
+                        : progressStep === 3
+                          ? "66%"
+                          : "100%",
                 },
               ]}
             />
-            
+
             <View style={styles.stepWrapper}>
-              <View style={[styles.stepDot, progressStep >= 1 && styles.stepDotActive]}>
-                <Ionicons name="receipt" size={12} color={progressStep >= 1 ? "#FFFFFF" : "#A0AEC0"} />
+              <View
+                style={[
+                  styles.stepDot,
+                  progressStep >= 1 && styles.stepDotActive,
+                ]}
+              >
+                <Ionicons
+                  name="receipt"
+                  size={12}
+                  color={progressStep >= 1 ? "#FFFFFF" : "#A0AEC0"}
+                />
               </View>
               <Text style={styles.stepLabel}>Recibido</Text>
             </View>
 
             <View style={styles.stepWrapper}>
-              <View style={[styles.stepDot, progressStep >= 2 && styles.stepDotActive]}>
-                <Ionicons name="flame" size={12} color={progressStep >= 2 ? "#FFFFFF" : "#A0AEC0"} />
+              <View
+                style={[
+                  styles.stepDot,
+                  progressStep >= 2 && styles.stepDotActive,
+                ]}
+              >
+                <Ionicons
+                  name="flame"
+                  size={12}
+                  color={progressStep >= 2 ? "#FFFFFF" : "#A0AEC0"}
+                />
               </View>
               <Text style={styles.stepLabel}>Cocina</Text>
             </View>
 
             <View style={styles.stepWrapper}>
-              <View style={[styles.stepDot, progressStep >= 3 && styles.stepDotActive]}>
-                <Ionicons name="bicycle" size={12} color={progressStep >= 3 ? "#FFFFFF" : "#A0AEC0"} />
+              <View
+                style={[
+                  styles.stepDot,
+                  progressStep >= 3 && styles.stepDotActive,
+                ]}
+              >
+                <Ionicons
+                  name="bicycle"
+                  size={12}
+                  color={progressStep >= 3 ? "#FFFFFF" : "#A0AEC0"}
+                />
               </View>
               <Text style={styles.stepLabel}>Reparto</Text>
             </View>
 
             <View style={styles.stepWrapper}>
-              <View style={[styles.stepDot, progressStep >= 4 && styles.stepDotActive]}>
-                <Ionicons name="checkmark-done" size={12} color={progressStep >= 4 ? "#FFFFFF" : "#A0AEC0"} />
+              <View
+                style={[
+                  styles.stepDot,
+                  progressStep >= 4 && styles.stepDotActive,
+                ]}
+              >
+                <Ionicons
+                  name="checkmark-done"
+                  size={12}
+                  color={progressStep >= 4 ? "#FFFFFF" : "#A0AEC0"}
+                />
               </View>
               <Text style={styles.stepLabel}>Entregado</Text>
             </View>
@@ -236,28 +253,36 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
         {/* Delivery / Driver Card */}
         <View style={styles.detailsCard}>
           <Text style={styles.cardTitle}>Datos del Reparto</Text>
-          
+
           <View style={styles.detailRow}>
             <Ionicons name="person-circle-outline" size={28} color="#4A5568" />
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Repartidor Asignado</Text>
-              <Text style={styles.detailValue}>Marcos Torres</Text>
+              <Text style={styles.detailValue}>
+                {order.repartidor?.nombre || "No asignado"}
+              </Text>
             </View>
             <TouchableOpacity style={styles.contactButton}>
               <Ionicons name="call" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 
-          <View style={[styles.detailRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+          <View
+            style={[
+              styles.detailRow,
+              { borderBottomWidth: 0, paddingBottom: 0 },
+            ]}
+          >
             <Ionicons name="location-outline" size={28} color="#4A5568" />
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Dirección de Entrega</Text>
               <Text style={styles.detailValue}>
-                {comApp?.direccion?.calle} {comApp?.direccion?.numeracion}, {comApp?.direccion?.barrio}
+                {order.direccion?.calle} {order.direccion?.numeracion},{" "}
+                {order.direccion?.barrio}
               </Text>
-              {comApp?.direccion?.referencia && (
+              {order.direccion?.referencia && (
                 <Text style={styles.detailSubvalue}>
-                  Ref: {comApp.direccion.referencia}
+                  Ref: {order.direccion.referencia}
                 </Text>
               )}
             </View>
@@ -269,7 +294,9 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
           <Text style={styles.cardTitle}>Resumen del Pedido</Text>
           {order.detalles?.map((det) => (
             <View key={det.id} style={styles.orderItemRow}>
-              <Text style={styles.itemName}>1x {det.plato?.nombre || "Plato"}</Text>
+              <Text style={styles.itemName}>
+                1x {det.plato?.nombre || "Plato"}
+              </Text>
               <Text style={styles.itemPrice}>
                 $ {det.precioUnitario.toLocaleString("es-AR")}
               </Text>

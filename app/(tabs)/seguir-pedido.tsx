@@ -1,9 +1,15 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import React, { useEffect } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useHomeController } from "../../controllers/home.controller";
 import { SeguirPedidoView } from "../../views/seguir-pedido.view";
-import { Ionicons } from "@expo/vector-icons";
 
 export default function SeguirPedidoScreen() {
   const { activeOrder, loading, checkActiveOrder } = useHomeController();
@@ -29,7 +35,10 @@ export default function SeguirPedidoScreen() {
       <View style={styles.centerContainer}>
         <Ionicons name="basket-outline" size={48} color="#A0AEC0" />
         <Text style={styles.emptyText}>No tienes ningún pedido en curso.</Text>
-        <TouchableOpacity style={styles.menuButton} onPress={() => router.replace("/(tabs)")}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => router.replace("/(tabs)")}
+        >
           <Text style={styles.menuButtonText}>Ver la Carta</Text>
         </TouchableOpacity>
       </View>

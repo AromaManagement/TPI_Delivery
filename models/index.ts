@@ -46,8 +46,13 @@ export interface Carta {
   updatedAt?: string;
 }
 
-export type EstadoComanda = "SIN_ASIGNAR" | "ASIGNADO" | "EN_COCINA" | "LISTO";
-export type EstadoRecorrido = "PENDIENTE" | "EN_CAMINO" | "ENTREGADO" | "CANCELADO";
+export type EstadoComanda =
+  | "SIN_ASIGNAR"
+  | "EN_COCINA"
+  | "LISTO"
+  | "EN_CAMINO"
+  | "ENTREGADO"
+  | "CANCELADO";
 
 export interface Direccion {
   id: number;
@@ -67,17 +72,10 @@ export interface Comanda {
   fechaSolicitud: string;
   fechaEntrega?: string | null;
   detalles?: DetalleComanda[];
-  comandaAplicacion?: ComandaAplicacion | null;
+  direccion: Direccion;
+  repartidor?: Usuario | null;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface ComandaAplicacion {
-  id: number;
-  comandaId: number;
-  direccionId?: number | null;
-  direccion?: Direccion | null;
-  recorridos?: Recorrido[];
 }
 
 export interface DetalleComanda {
@@ -87,17 +85,4 @@ export interface DetalleComanda {
   platoId: number;
   plato?: Plato;
   precioUnitario: number;
-}
-
-export interface Recorrido {
-  id: number;
-  comandaAplicacionId?: number | null;
-  empleadoId?: number | null;
-  estado?: EstadoRecorrido | null;
-  fechaFin?: string | null;
-  fechaIn?: string | null;
-  coordIn?: string | null; // e.g. "lat,lng"
-  coordFin?: string | null; // e.g. "lat,lng"
-  createdAt?: string;
-  updatedAt?: string;
 }

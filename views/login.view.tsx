@@ -38,9 +38,12 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   };
 
-  const handleQuickLogin = (role: "client" | "admin") => {
+  const handleQuickLogin = (role: "client" | "admin" | "repartidor") => {
     if (role === "client") {
       setCorreo("cliente@aromas.com");
+      setContrasena("12345678");
+    } else if (role === "repartidor") {
+      setCorreo("repartidor@aromas.com");
       setContrasena("12345678");
     } else {
       setCorreo("admin@aromas.com");
@@ -144,10 +147,10 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickButton}
-              onPress={() => handleQuickLogin("admin")}
+              onPress={() => handleQuickLogin("repartidor")}
             >
-              <Ionicons name="shield-checkmark-outline" size={16} color="#2D3748" />
-              <Text style={styles.quickButtonText}>Admin</Text>
+              <Ionicons name="bicycle-outline" size={16} color="#2D3748" />
+              <Text style={styles.quickButtonText}>Repartidor</Text>
             </TouchableOpacity>
           </View>
         </View>

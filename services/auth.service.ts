@@ -36,6 +36,19 @@ export const authService = {
         };
       }
       
+      if (data.correo === "repartidor@aromas.com" && data.contrasena === "12345678") {
+        return {
+          token: "mock-jwt-token-for-repartidor",
+          user: {
+            id: 102,
+            correo: "repartidor@aromas.com",
+            nombre: "Carlos",
+            apellido: "Gómez",
+            rol: "REPARTIDOR" as const,
+          },
+        };
+      }
+
       // Also support default admin login if needed
       if (data.correo === "admin@aromas.com" && data.contrasena === "12345678") {
         return {

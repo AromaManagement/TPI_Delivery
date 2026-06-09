@@ -28,11 +28,10 @@ export const authController = {
     try {
       const { token, user } = await authService.login(input);
       
-      // Ensure only CLIENTE can access the delivery app (as per requirements)
-      if (user.rol !== "CLIENTE") {
+      if (user.rol !== "CLIENTE" && user.rol !== "REPARTIDOR") {
         return {
           ok: false,
-          error: "Acceso denegado. Esta aplicación es exclusiva para clientes.",
+          error: "Acceso denegado. Esta aplicación es para clientes y repartidores.",
         };
       }
 

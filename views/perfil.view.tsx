@@ -39,7 +39,11 @@ export function PerfilView() {
           </View>
           <Text style={styles.userName}>{user.nombre} {user.apellido}</Text>
           <Text style={styles.userRole}>
-            {user.rol === "ADMIN" ? "Administrador" : "Cliente Aroma"}
+            {user.rol === "ADMIN"
+              ? "Administrador"
+              : user.rol === "REPARTIDOR"
+              ? "Repartidor"
+              : "Cliente Aroma"}
           </Text>
         </View>
 
@@ -69,33 +73,37 @@ export function PerfilView() {
             </View>
           )}
 
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconWrapper}>
-              <Ionicons name="location-outline" size={20} color="#4A5568" />
+          {user.rol !== "REPARTIDOR" && (
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconWrapper}>
+                <Ionicons name="location-outline" size={20} color="#4A5568" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Dirección de entrega</Text>
+                <Text style={styles.infoValue}>
+                  {user.direccionId ? "Av. Emilio Civit 450, Quinta Sección" : "No registrada"}
+                </Text>
+              </View>
             </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Dirección de entrega</Text>
-              <Text style={styles.infoValue}>
-                {user.direccionId ? "Av. Emilio Civit 450, Quinta Sección" : "No registrada"}
-              </Text>
-            </View>
+          )}
+        </View>
+
+        {/* Actions Section — solo para no repartidores */}
+        {user.rol !== "REPARTIDOR" && (
+          <View style={styles.actionsCard}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/ajustes" as any)}>
+              <Ionicons name="settings-outline" size={20} color="#2D3748" />
+              <Text style={styles.actionButtonText}>Ajustes de Cuenta</Text>
+              <Ionicons name="chevron-forward" size={18} color="#A0AEC0" style={styles.actionChevron} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/historial" as any)}>
+              <Ionicons name="receipt-outline" size={20} color="#2D3748" />
+              <Text style={styles.actionButtonText}>Historial de Pedidos</Text>
+              <Ionicons name="chevron-forward" size={18} color="#A0AEC0" style={styles.actionChevron} />
+            </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Actions Section */}
-        <View style={styles.actionsCard}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/ajustes" as any)}>
-            <Ionicons name="settings-outline" size={20} color="#2D3748" />
-            <Text style={styles.actionButtonText}>Ajustes de Cuenta</Text>
-            <Ionicons name="chevron-forward" size={18} color="#A0AEC0" style={styles.actionChevron} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton} onPress={() => router.push("/historial" as any)}>
-            <Ionicons name="receipt-outline" size={20} color="#2D3748" />
-            <Text style={styles.actionButtonText}>Historial de Pedidos</Text>
-            <Ionicons name="chevron-forward" size={18} color="#A0AEC0" style={styles.actionChevron} />
-          </TouchableOpacity>
-        </View>
+        )}
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

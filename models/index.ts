@@ -72,8 +72,9 @@ export interface Comanda {
   fechaSolicitud: string;
   fechaEntrega?: string | null;
   detalles?: DetalleComanda[];
-  direccion: Direccion;
+  direccion?: Direccion | null;
   repartidor?: Usuario | null;
+  cliente?: Pick<Usuario, "id" | "nombre" | "apellido"> | null;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -29,19 +29,23 @@ export default function RootLayout() {
       } else {
         const user = useAuthStore.getState().user;
         if (user) {
-          comandaService
-            .getActiveOrder()
-            .then((order) => {
-              if (order) {
-                router.replace("/(tabs)/seguir-pedido" as any);
-              } else {
+          if (user.rol === "REPARTIDOR") {
+            router.replace("/(repartidor)/pedidos" as any);
+          } else {
+            comandaService
+              .getActiveOrder()
+              .then((order) => {
+                if (order) {
+                  router.replace("/(tabs)/seguir-pedido" as any);
+                } else {
+                  router.replace("/(tabs)");
+                }
+              })
+              .catch((err) => {
+                console.warn("Error checking active order on startup", err);
                 router.replace("/(tabs)");
-              }
-            })
-            .catch((err) => {
-              console.warn("Error checking active order on startup", err);
-              router.replace("/(tabs)");
-            });
+              });
+          }
         } else {
           router.replace("/(tabs)");
         }
@@ -56,6 +60,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="(repartidor)" options={{ gestureEnabled: false }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}

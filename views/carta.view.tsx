@@ -53,11 +53,23 @@ export function CartaView() {
     }
   }, [selectedPlato]);
 
+  const cartTotal = React.useMemo(
+    () => cartItems.reduce((sum, i) => sum + i.plato.precio * i.cantidad, 0),
+    [cartItems],
+  );
+  const cartCount = React.useMemo(
+    () => cartItems.reduce((sum, i) => sum + i.cantidad, 0),
+    [cartItems],
+  );
+
   // Reference for the main scroll view to scroll to sections
   const scrollViewRef = React.useRef<ScrollView>(null);
-  
-  // Keep track of section layouts to scroll programmatically
-  const [sectionLayouts, setSectionLayouts] = React.useState<Record<number, number>>({});
+
+  // Use ref (not state) for layouts so onScroll doesn't cause re-renders
+  const sectionLayoutsRef = React.useRef<Record<number, number>>({});
+  // Ref mirrors state so onScroll callback always has current value
+  const activeSectionIdRef = React.useRef<number>(activeSectionId);
+  activeSectionIdRef.current = activeSectionId;
 
   if (loading) {
     return (
@@ -84,7 +96,7 @@ export function CartaView() {
 
   const handleSectionTabPress = (id: number) => {
     setActiveSectionId(id);
-    const yOffset = sectionLayouts[id];
+    const yOffset = sectionLayoutsRef.current[id];
     if (yOffset !== undefined && scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: yOffset, animated: true });
     }
@@ -131,21 +143,19 @@ export function CartaView() {
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.menuScrollContainer}
-        scrollEventThrottle={16}
+        scrollEventThrottle={32}
         onScroll={(e) => {
-          // Detect active section based on scroll offset
           const y = e.nativeEvent.contentOffset.y;
-          // Find the section that matches current scroll offset
-          let currentSectionId = activeSectionId;
+          let currentSectionId = activeSectionIdRef.current;
           for (let i = secciones.length - 1; i >= 0; i--) {
             const sec = secciones[i];
-            const secY = sectionLayouts[sec.id];
+            const secY = sectionLayoutsRef.current[sec.id];
             if (secY !== undefined && y >= secY - 10) {
               currentSectionId = sec.id;
               break;
             }
           }
-          if (currentSectionId !== activeSectionId) {
+          if (currentSectionId !== activeSectionIdRef.current) {
             setActiveSectionId(currentSectionId);
           }
         }}
@@ -154,8 +164,7 @@ export function CartaView() {
           <View
             key={s.id}
             onLayout={(event) => {
-              const { y } = event.nativeEvent.layout;
-              setSectionLayouts((prev) => ({ ...prev, [s.id]: y }));
+              sectionLayoutsRef.current[s.id] = event.nativeEvent.layout.y;
             }}
             style={styles.sectionBlock}
           >
@@ -249,6 +258,21 @@ export function CartaView() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Floating cart button */}
+      {cartItems.length > 0 && !hasActiveOrder && (
+        <TouchableOpacity
+          style={styles.floatingCartBar}
+          onPress={() => router.push("/(tabs)/carrito" as any)}
+          activeOpacity={0.9}
+        >
+          <View style={styles.floatingBadge}>
+            <Text style={styles.floatingBadgeText}>{cartCount}</Text>
+          </View>
+          <Text style={styles.floatingCartText}>Ir al carrito</Text>
+          <Text style={styles.floatingCartPrice}>{formatPrice(cartTotal)}</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Dish detail bottom sheet Modal */}
       <Modal
@@ -681,5 +705,47 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  floatingCartBar: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    right: 16,
+    height: 56,
+    backgroundColor: "#1A202C",
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  floatingBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#4A5568",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  floatingBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  floatingCartText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  floatingCartPrice: {
+    color: "#A0AEC0",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

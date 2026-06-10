@@ -1,5 +1,5 @@
 import { api } from "./api";
-import { Carta } from "../models";
+import { Carta, Seccion } from "../models";
 
 // Static mock menu content mirroring C:\Users\Yeu\OneDrive\Documentos\ComputacionMovil\TPI\mock-data\carta.json
 const MOCK_CARTA: Carta = {
@@ -110,8 +110,8 @@ const MOCK_CARTA: Carta = {
 export const cartaService = {
   getCarta: async (): Promise<Carta> => {
     try {
-      // Try to fetch from backend if endpoint gets implemented
-      return await api.get<Carta>("/carta");
+      const secciones = await api.get<Seccion[]>("/carta/disponibles");
+      return { id: 1, secciones };
     } catch (error) {
       console.log("Using static mock menu data (MOCK_CARTA).");
       return MOCK_CARTA;

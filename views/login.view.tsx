@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { authController } from "../controllers/auth.controller";
 
 interface LoginViewProps {
@@ -128,6 +129,14 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
             ) : (
               <Text style={styles.loginButtonText}>Ingresar</Text>
             )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Register link */}
+        <View style={styles.registerLinkContainer}>
+          <Text style={styles.registerLinkText}>¿No tenés cuenta? </Text>
+          <TouchableOpacity onPress={() => router.push("/registro" as any)}>
+            <Text style={styles.registerLink}>Registrate</Text>
           </TouchableOpacity>
         </View>
 
@@ -331,4 +340,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#2D3748",
   },
+  registerLinkContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 18,
+  },
+  registerLinkText: { fontSize: 14, color: "#718096" },
+  registerLink: { fontSize: 14, color: "#1A202C", fontWeight: "bold" },
 });

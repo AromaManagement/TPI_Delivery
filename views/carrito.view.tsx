@@ -8,6 +8,8 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Modal,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -26,39 +28,43 @@ export function CarritoView() {
   const user = useAuthStore((state) => state.user);
   const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<"efectivo" | "mercadopago" | null>(null);
 
   const subtotal = getTotal();
   const costoEnvio = subtotal > 0 ? 800 : 0;
   const total = subtotal + costoEnvio;
 
-  const handleCheckout = async () => {
+  const openPaymentModal = () => {
     if (!user) {
       Alert.alert("Error", "Debe iniciar sesión para realizar un pedido.");
       return;
     }
-
     if (items.length === 0) {
       Alert.alert("Pedido vacío", "Agregue platos antes de confirmar.");
       return;
     }
+    setSelectedPayment(null);
+    setShowPaymentModal(true);
+  };
 
+  const handleCheckout = async () => {
+    if (!selectedPayment) {
+      Alert.alert("Seleccioná un método de pago.");
+      return;
+    }
+    setShowPaymentModal(false);
     setLoading(true);
     try {
-      // Create the order using comandaService
-      await comandaService.crearComanda(user.id, items);
-      
-      // Clear shopping cart
+      await comandaService.crearComanda(user!.id, items);
       clearCart();
-      
-      Alert.alert("¡Pago Exitoso!", "Tu pedido ha sido recibido y ya se está preparando.", [
-        {
-          text: "Seguir Pedido",
-          onPress: () => {
-            // Redirect immediately to the order tracking screen
-            router.replace("/(tabs)/seguir-pedido" as any);
-          },
-        },
-      ]);
+      Alert.alert(
+        "¡Pedido confirmado!",
+        selectedPayment === "efectivo"
+          ? "Abonás en efectivo al repartidor al recibir tu pedido."
+          : "Tu pago con Mercado Pago fue procesado exitosamente.",
+        [{ text: "Seguir Pedido", onPress: () => router.replace("/(tabs)/seguir-pedido" as any) }],
+      );
     } catch (error: any) {
       Alert.alert("Error", error.message || "No se pudo realizar el pedido.");
     } finally {
@@ -96,6 +102,65 @@ export function CarritoView() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mi Pedido</Text>
       </View>
+
+      {/* Payment method selection modal */}
+      <Modal
+        visible={showPaymentModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPaymentModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowPaymentModal(false)} />
+          <View style={styles.paymentSheet}>
+            <View style={styles.paymentHandle} />
+            <Text style={styles.paymentTitle}>¿Cómo querés pagar?</Text>
+            <Text style={styles.paymentSubtitle}>Seleccioná un método de pago</Text>
+
+            <TouchableOpacity
+              style={[styles.paymentOption, selectedPayment === "efectivo" && styles.paymentOptionSelected]}
+              onPress={() => setSelectedPayment("efectivo")}
+            >
+              <View style={styles.paymentIconContainer}>
+                <Ionicons name="cash-outline" size={28} color={selectedPayment === "efectivo" ? "#FFFFFF" : "#2D3748"} />
+              </View>
+              <View style={styles.paymentOptionInfo}>
+                <Text style={[styles.paymentOptionTitle, selectedPayment === "efectivo" && styles.paymentOptionTitleSelected]}>Efectivo</Text>
+                <Text style={[styles.paymentOptionDesc, selectedPayment === "efectivo" && styles.paymentOptionDescSelected]}>Pagás al repartidor al recibir</Text>
+              </View>
+              {selectedPayment === "efectivo" && (
+                <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.paymentOption, selectedPayment === "mercadopago" && styles.paymentOptionSelected]}
+              onPress={() => setSelectedPayment("mercadopago")}
+            >
+              <View style={[styles.paymentIconContainer, selectedPayment !== "mercadopago" && styles.mpIconBg]}>
+                <Text style={[styles.mpLogo, selectedPayment === "mercadopago" && { color: "#FFFFFF" }]}>MP</Text>
+              </View>
+              <View style={styles.paymentOptionInfo}>
+                <Text style={[styles.paymentOptionTitle, selectedPayment === "mercadopago" && styles.paymentOptionTitleSelected]}>Mercado Pago</Text>
+                <Text style={[styles.paymentOptionDesc, selectedPayment === "mercadopago" && styles.paymentOptionDescSelected]}>Pago digital seguro</Text>
+              </View>
+              {selectedPayment === "mercadopago" && (
+                <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.confirmPaymentBtn, !selectedPayment && styles.confirmPaymentBtnDisabled]}
+              onPress={handleCheckout}
+              disabled={!selectedPayment}
+            >
+              <Text style={styles.confirmPaymentText}>
+                {selectedPayment ? `Pagar ${formatPrice(total)}` : "Seleccioná un método"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <FlatList
         data={items}
@@ -173,7 +238,7 @@ export function CarritoView() {
             {/* Pay and Checkout Button */}
             <TouchableOpacity
               style={[styles.payButton, loading && styles.payButtonDisabled]}
-              onPress={handleCheckout}
+              onPress={openPaymentModal}
               disabled={loading}
             >
               {loading ? (
@@ -181,7 +246,7 @@ export function CarritoView() {
               ) : (
                 <>
                   <Ionicons name="wallet-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.payButtonText}>Pagar y Realizar Pedido</Text>
+                  <Text style={styles.payButtonText}>Confirmar pedido</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -391,12 +456,70 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  payButtonDisabled: {
-    opacity: 0.7,
+  payButtonDisabled: { opacity: 0.7 },
+  payButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  modalOverlay: { flex: 1, justifyContent: "flex-end" },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
+  paymentSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 36,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
   },
-  payButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "bold",
+  paymentHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 20,
   },
+  paymentTitle: { fontSize: 20, fontWeight: "bold", color: "#1A202C", textAlign: "center" },
+  paymentSubtitle: { fontSize: 14, color: "#718096", textAlign: "center", marginTop: 4, marginBottom: 24 },
+  paymentOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    backgroundColor: "#FAFAFA",
+  },
+  paymentOptionSelected: {
+    borderColor: "#1A202C",
+    backgroundColor: "#1A202C",
+  },
+  paymentIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#EDF2F7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  mpIconBg: { backgroundColor: "#009ee3" },
+  mpLogo: { fontSize: 14, fontWeight: "900", color: "#FFFFFF" },
+  paymentOptionInfo: { flex: 1 },
+  paymentOptionTitle: { fontSize: 16, fontWeight: "700", color: "#1A202C" },
+  paymentOptionTitleSelected: { color: "#FFFFFF" },
+  paymentOptionDesc: { fontSize: 13, color: "#718096", marginTop: 2 },
+  paymentOptionDescSelected: { color: "#CBD5E0" },
+  confirmPaymentBtn: {
+    backgroundColor: "#1A202C",
+    borderRadius: 14,
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  confirmPaymentBtnDisabled: { backgroundColor: "#CBD5E0" },
+  confirmPaymentText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
 });

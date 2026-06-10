@@ -3,7 +3,7 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack, router } from "expo-router";
+import { Stack, router, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import "react-native-reanimated";
@@ -12,6 +12,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { comandaService } from "../services/comanda.service";
 import { useAuthStore } from "../store/authStore";
 
+const PUBLIC_ROUTES = ["/login", "/registro"];
+
 export const unstable_settings = {
   anchor: "(tabs)",
 };
@@ -19,13 +21,20 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const pathname = usePathname();
+  const prevAuthRef = React.useRef<boolean | null>(null);
 
-  // Monitor auth state changes and redirect
+  // Only redirect when auth state actually changes value, not on every render
   useEffect(() => {
-    // A tiny timeout ensures the router is fully mounted before redirecting
+    if (prevAuthRef.current === isAuthenticated) return;
+    const wasAuth = prevAuthRef.current;
+    prevAuthRef.current = isAuthenticated;
+
     const timeout = setTimeout(() => {
       if (!isAuthenticated) {
-        router.replace("/login");
+        if (!PUBLIC_ROUTES.includes(pathname)) {
+          router.replace("/login");
+        }
       } else {
         const user = useAuthStore.getState().user;
         if (user) {
@@ -59,6 +68,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="registro" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         <Stack.Screen name="(repartidor)" options={{ gestureEnabled: false }} />
         <Stack.Screen

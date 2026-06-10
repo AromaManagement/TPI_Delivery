@@ -99,7 +99,10 @@ export function MiEntregaView() {
     : "Sin dirección";
 
   const handleLlamar = () => {
-    Linking.openURL("tel:");
+    const telefono = cliente?.telefono;
+    if (telefono) {
+      Linking.openURL(`tel:${telefono}`);
+    }
   };
 
   return (
@@ -129,9 +132,11 @@ export function MiEntregaView() {
                   ? `${cliente.nombre} ${cliente.apellido}`
                   : "Cliente"}
               </Text>
-              <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
-                <Ionicons name="call" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
+              {cliente?.telefono && (
+                <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
+                  <Ionicons name="call" size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>

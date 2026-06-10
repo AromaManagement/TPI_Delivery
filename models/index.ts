@@ -7,6 +7,7 @@ export interface Usuario {
   apellido: string;
   tipoDocumento?: string | null;
   documento?: string | null;
+  telefono?: string | null;
   nacimiento?: string | null;
   direccionId?: number | null;
   rol: Rol;
@@ -74,7 +75,7 @@ export interface Comanda {
   detalles?: DetalleComanda[];
   direccion?: Direccion | null;
   repartidor?: Usuario | null;
-  cliente?: Pick<Usuario, "id" | "nombre" | "apellido"> | null;
+  cliente?: Pick<Usuario, "id" | "nombre" | "apellido" | "telefono"> | null;
   createdAt?: string;
   updatedAt?: string;
   pago: {

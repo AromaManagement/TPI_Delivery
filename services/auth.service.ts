@@ -16,6 +16,8 @@ export interface RegisterInput {
   contrasena: string;
   nombre: string;
   apellido: string;
+  telefono?: string;
+  rol?: "CLIENTE" | "REPARTIDOR";
 }
 
 export const authService = {

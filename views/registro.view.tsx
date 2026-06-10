@@ -13,11 +13,16 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { authController } from "../controllers/auth.controller";
+import { useAuthStore } from "../store/authStore";
+
+type Rol = "CLIENTE" | "REPARTIDOR";
 
 export function RegistroView() {
+  const [rol, setRol] = useState<Rol>("CLIENTE");
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [correo, setCorreo] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmar, setConfirmar] = useState("");
   const [securePass, setSecurePass] = useState(true);
@@ -34,11 +39,23 @@ export function RegistroView() {
     }
 
     setLoading(true);
-    const result = await authController.registerAction({ nombre, apellido, correo, contrasena });
+    const result = await authController.registerAction({
+      nombre,
+      apellido,
+      correo,
+      contrasena,
+      telefono: telefono.trim() || undefined,
+      rol,
+    });
     setLoading(false);
 
     if (result.ok) {
-      router.replace("/(tabs)" as any);
+      const userRol = useAuthStore.getState().user?.rol;
+      if (userRol === "REPARTIDOR") {
+        router.replace("/(repartidor)/pedidos" as any);
+      } else {
+        router.replace("/(tabs)" as any);
+      }
     } else {
       setError(result.error || "Ocurrió un error inesperado.");
     }
@@ -60,6 +77,36 @@ export function RegistroView() {
           </View>
           <Text style={styles.brandTitle}>Crear Cuenta</Text>
           <Text style={styles.brandSubtitle}>Registrate en Aroma Delivery</Text>
+        </View>
+
+        {/* Rol selector */}
+        <View style={styles.rolSelector}>
+          <TouchableOpacity
+            style={[styles.rolOption, rol === "CLIENTE" && styles.rolOptionActive]}
+            onPress={() => setRol("CLIENTE")}
+          >
+            <Ionicons
+              name="person"
+              size={20}
+              color={rol === "CLIENTE" ? "#FFFFFF" : "#718096"}
+            />
+            <Text style={[styles.rolOptionText, rol === "CLIENTE" && styles.rolOptionTextActive]}>
+              Cliente
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.rolOption, rol === "REPARTIDOR" && styles.rolOptionActive]}
+            onPress={() => setRol("REPARTIDOR")}
+          >
+            <Ionicons
+              name="bicycle"
+              size={20}
+              color={rol === "REPARTIDOR" ? "#FFFFFF" : "#718096"}
+            />
+            <Text style={[styles.rolOptionText, rol === "REPARTIDOR" && styles.rolOptionTextActive]}>
+              Repartidor
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Form */}
@@ -114,6 +161,23 @@ export function RegistroView() {
           </View>
 
           <View style={styles.inputWrapper}>
+            <Text style={styles.inputLabel}>
+              Teléfono{rol === "CLIENTE" ? " (opcional)" : ""}
+            </Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="call-outline" size={20} color="#718096" style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputInner}
+                placeholder="2614001122"
+                placeholderTextColor="#A0AEC0"
+                value={telefono}
+                onChangeText={setTelefono}
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputWrapper}>
             <Text style={styles.inputLabel}>Contraseña</Text>
             <View style={styles.inputContainer}>
               <Ionicons name="lock-closed-outline" size={20} color="#718096" style={styles.inputIcon} />
@@ -159,7 +223,9 @@ export function RegistroView() {
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.registerButtonText}>Crear cuenta</Text>
+              <Text style={styles.registerButtonText}>
+                Crear cuenta como {rol === "REPARTIDOR" ? "Repartidor" : "Cliente"}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -184,7 +250,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 40,
   },
-  headerContainer: { alignItems: "center", marginBottom: 28 },
+  headerContainer: { alignItems: "center", marginBottom: 20 },
   logoBadge: {
     width: 76,
     height: 76,
@@ -201,6 +267,38 @@ const styles = StyleSheet.create({
   },
   brandTitle: { fontSize: 28, fontWeight: "bold", color: "#1A202C" },
   brandSubtitle: { fontSize: 15, color: "#718096", marginTop: 4 },
+  rolSelector: {
+    flexDirection: "row",
+    backgroundColor: "#EDF2F7",
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 20,
+  },
+  rolOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  rolOptionActive: {
+    backgroundColor: "#1A202C",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rolOptionText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#718096",
+  },
+  rolOptionTextActive: {
+    color: "#FFFFFF",
+  },
   formCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,

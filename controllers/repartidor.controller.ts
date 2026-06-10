@@ -36,6 +36,13 @@ export function usePedidosDisponiblesController() {
 
   const tomarPedido = async (comanda: Comanda) => {
     if (!user) return;
+    if (pedidoActivo) {
+      Alert.alert(
+        "Ya tenés una entrega activa",
+        `Completá el pedido #${pedidoActivo.id} antes de tomar otro.`
+      );
+      return;
+    }
     try {
       const updated = await repartidorService.tomarPedido(comanda.id, user.id);
       setPedidoActivo(updated);

@@ -1,8 +1,11 @@
+import { cancelarComanda } from "@/services/comanda.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -86,9 +89,57 @@ export default function SeguirPedidoScreen() {
     );
   }
 
+  if (activeOrder.pago.estadoPago === "PENDIENTE") {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#1A202C" />
+        <Text style={styles.loadingText}>
+          Esperando confirmación de pago...
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.menuButton, { marginTop: 24, width: "60%" }]}
+          onPress={() => Linking.openURL(activeOrder.pago.urlPago || "")}
+        >
+          <Text style={[styles.menuButtonText, { textAlign: "center" }]}>
+            Ir a pagar
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuButton,
+            { marginTop: 12, width: "60%", backgroundColor: "#E53E3E" },
+          ]}
+          onPress={() => {
+            cancelarComanda(activeOrder.id)
+              .then(() => {
+                Alert.alert(
+                  "Pedido cancelado",
+                  "Tu pedido ha sido cancelado con éxito.",
+                );
+                lastOrderRef.current = null;
+                setShowCompleted(false);
+                router.replace("/(tabs)");
+              })
+              .catch((error) => {
+                Alert.alert(
+                  "Error",
+                  "No se pudo cancelar el pedido. Por favor, intenta de nuevo más tarde.",
+                );
+              });
+          }}
+        >
+          <Text style={[styles.menuButtonText, { textAlign: "center" }]}>
+            Cancelar pedido
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return <SeguirPedidoView order={activeOrder} onRefresh={checkActiveOrder} />;
 }
-
 const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,

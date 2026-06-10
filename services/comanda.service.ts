@@ -16,6 +16,7 @@ export const comandaService = {
   crearComanda: async (
     clienteId: number,
     items: { plato: any; cantidad: number }[],
+    metodoPago: string,
   ): Promise<Comanda> => {
     try {
       const body = {
@@ -24,6 +25,7 @@ export const comandaService = {
           platoId: i.plato.id,
           cantidad: i.cantidad,
         })),
+        metodoPago: metodoPago,
       };
       return await api.post<Comanda>("/comandas", body);
     } catch (error) {
@@ -31,4 +33,13 @@ export const comandaService = {
       throw new Error("Failed to create order. Please try again later.");
     }
   },
+};
+
+export const cancelarComanda = async (comandaId: number): Promise<void> => {
+  try {
+    return await api.post(`/comandas/${comandaId}/cancelar`);
+  } catch (error) {
+    console.error("Error canceling order:", error);
+    throw new Error("Failed to cancel order. Please try again later.");
+  }
 };

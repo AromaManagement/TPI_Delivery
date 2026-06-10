@@ -16,6 +16,7 @@ export const comandaService = {
   crearComanda: async (
     clienteId: number,
     items: { plato: any; cantidad: number }[],
+    metodoPago: string,
   ): Promise<Comanda> => {
     try {
       const body = {
@@ -24,6 +25,7 @@ export const comandaService = {
           platoId: i.plato.id,
           cantidad: i.cantidad,
         })),
+        metodoPago: metodoPago,
       };
       return await api.post<Comanda>("/comandas", body);
     } catch (error) {

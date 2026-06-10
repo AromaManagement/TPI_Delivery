@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -86,9 +87,41 @@ export default function SeguirPedidoScreen() {
     );
   }
 
+  if (activeOrder.pago.estadoPago === "PENDIENTE") {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#1A202C" />
+        <Text style={styles.loadingText}></Text>
+
+        <TouchableOpacity
+          style={[styles.menuButton, { marginTop: 24, width: "60%" }]}
+          onPress={() => Linking.openURL(activeOrder.pago.urlPago || "")}
+        >
+          <Text style={[styles.menuButtonText, { textAlign: "center" }]}>
+            Ir a pagar
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuButton,
+            { marginTop: 12, width: "60%", backgroundColor: "#E53E3E" },
+          ]}
+          onPress={() => {
+            console.log("Cancelar pedido"); // Aquí iría la lógica para cancelar el pedido, como llamar a un endpoint de cancelación en el backend
+            // Cancelar pedido
+          }}
+        >
+          <Text style={[styles.menuButtonText, { textAlign: "center" }]}>
+            Cancelar pedido
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return <SeguirPedidoView order={activeOrder} onRefresh={checkActiveOrder} />;
 }
-
 const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,

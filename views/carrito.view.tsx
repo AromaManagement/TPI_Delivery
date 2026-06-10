@@ -1,21 +1,21 @@
-import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  SafeAreaView,
-  FlatList,
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Image,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useCartStore } from "../store/cartStore";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Linking,
+  Modal,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { comandaService } from "../services/comanda.service";
 import { useAuthStore } from "../store/authStore";
+import { useCartStore } from "../store/cartStore";
 
 const formatPrice = (value: number) => {
   return `$ ${value.toLocaleString("es-AR", {
@@ -26,10 +26,13 @@ const formatPrice = (value: number) => {
 
 export function CarritoView() {
   const user = useAuthStore((state) => state.user);
-  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
+  const { items, updateQuantity, removeItem, clearCart, getTotal } =
+    useCartStore();
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<"efectivo" | "mercadopago" | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<
+    "efectivo" | "mercadopago" | null
+  >(null);
 
   const subtotal = getTotal();
   const costoEnvio = subtotal > 0 ? 800 : 0;
@@ -56,15 +59,19 @@ export function CarritoView() {
     setShowPaymentModal(false);
     setLoading(true);
     try {
-      await comandaService.crearComanda(user!.id, items);
-      clearCart();
-      Alert.alert(
-        "¡Pedido confirmado!",
-        selectedPayment === "efectivo"
-          ? "Abonás en efectivo al repartidor al recibir tu pedido."
-          : "Tu pago con Mercado Pago fue procesado exitosamente.",
-        [{ text: "Seguir Pedido", onPress: () => router.replace("/(tabs)/seguir-pedido" as any) }],
+      const newComanda = await comandaService.crearComanda(
+        user!.id,
+        items,
+        selectedPayment.toUpperCase(),
       );
+      if (!!newComanda.pago.urlPago) {
+        Linking.openURL(newComanda.pago.urlPago);
+      }
+
+      router.replace("/(tabs)/seguir-pedido" as any);
+      setTimeout(() => {
+        clearCart();
+      }, 3000);
     } catch (error: any) {
       Alert.alert("Error", error.message || "No se pudo realizar el pedido.");
     } finally {
@@ -111,22 +118,51 @@ export function CarritoView() {
         onRequestClose={() => setShowPaymentModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowPaymentModal(false)} />
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowPaymentModal(false)}
+          />
           <View style={styles.paymentSheet}>
             <View style={styles.paymentHandle} />
             <Text style={styles.paymentTitle}>¿Cómo querés pagar?</Text>
-            <Text style={styles.paymentSubtitle}>Seleccioná un método de pago</Text>
+            <Text style={styles.paymentSubtitle}>
+              Seleccioná un método de pago
+            </Text>
 
             <TouchableOpacity
-              style={[styles.paymentOption, selectedPayment === "efectivo" && styles.paymentOptionSelected]}
+              style={[
+                styles.paymentOption,
+                selectedPayment === "efectivo" && styles.paymentOptionSelected,
+              ]}
               onPress={() => setSelectedPayment("efectivo")}
             >
               <View style={styles.paymentIconContainer}>
-                <Ionicons name="cash-outline" size={28} color={selectedPayment === "efectivo" ? "#FFFFFF" : "#2D3748"} />
+                <Ionicons
+                  name="cash-outline"
+                  size={28}
+                  color={selectedPayment === "efectivo" ? "#FFFFFF" : "#2D3748"}
+                />
               </View>
               <View style={styles.paymentOptionInfo}>
-                <Text style={[styles.paymentOptionTitle, selectedPayment === "efectivo" && styles.paymentOptionTitleSelected]}>Efectivo</Text>
-                <Text style={[styles.paymentOptionDesc, selectedPayment === "efectivo" && styles.paymentOptionDescSelected]}>Pagás al repartidor al recibir</Text>
+                <Text
+                  style={[
+                    styles.paymentOptionTitle,
+                    selectedPayment === "efectivo" &&
+                      styles.paymentOptionTitleSelected,
+                  ]}
+                >
+                  Efectivo
+                </Text>
+                <Text
+                  style={[
+                    styles.paymentOptionDesc,
+                    selectedPayment === "efectivo" &&
+                      styles.paymentOptionDescSelected,
+                  ]}
+                >
+                  Pagás al repartidor al recibir
+                </Text>
               </View>
               {selectedPayment === "efectivo" && (
                 <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
@@ -134,15 +170,47 @@ export function CarritoView() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.paymentOption, selectedPayment === "mercadopago" && styles.paymentOptionSelected]}
+              style={[
+                styles.paymentOption,
+                selectedPayment === "mercadopago" &&
+                  styles.paymentOptionSelected,
+              ]}
               onPress={() => setSelectedPayment("mercadopago")}
             >
-              <View style={[styles.paymentIconContainer, selectedPayment !== "mercadopago" && styles.mpIconBg]}>
-                <Text style={[styles.mpLogo, selectedPayment === "mercadopago" && { color: "#FFFFFF" }]}>MP</Text>
+              <View
+                style={[
+                  styles.paymentIconContainer,
+                  selectedPayment !== "mercadopago" && styles.mpIconBg,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.mpLogo,
+                    selectedPayment === "mercadopago" && { color: "#FFFFFF" },
+                  ]}
+                >
+                  MP
+                </Text>
               </View>
               <View style={styles.paymentOptionInfo}>
-                <Text style={[styles.paymentOptionTitle, selectedPayment === "mercadopago" && styles.paymentOptionTitleSelected]}>Mercado Pago</Text>
-                <Text style={[styles.paymentOptionDesc, selectedPayment === "mercadopago" && styles.paymentOptionDescSelected]}>Pago digital seguro</Text>
+                <Text
+                  style={[
+                    styles.paymentOptionTitle,
+                    selectedPayment === "mercadopago" &&
+                      styles.paymentOptionTitleSelected,
+                  ]}
+                >
+                  Mercado Pago
+                </Text>
+                <Text
+                  style={[
+                    styles.paymentOptionDesc,
+                    selectedPayment === "mercadopago" &&
+                      styles.paymentOptionDescSelected,
+                  ]}
+                >
+                  Pago digital seguro
+                </Text>
               </View>
               {selectedPayment === "mercadopago" && (
                 <Ionicons name="checkmark-circle" size={22} color="#FFFFFF" />
@@ -150,12 +218,17 @@ export function CarritoView() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.confirmPaymentBtn, !selectedPayment && styles.confirmPaymentBtnDisabled]}
+              style={[
+                styles.confirmPaymentBtn,
+                !selectedPayment && styles.confirmPaymentBtnDisabled,
+              ]}
               onPress={handleCheckout}
               disabled={!selectedPayment}
             >
               <Text style={styles.confirmPaymentText}>
-                {selectedPayment ? `Pagar ${formatPrice(total)}` : "Seleccioná un método"}
+                {selectedPayment
+                  ? `Pagar ${formatPrice(total)}`
+                  : "Seleccioná un método"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -171,7 +244,9 @@ export function CarritoView() {
           <View style={styles.cartCard}>
             <View style={styles.cartInfo}>
               <Text style={styles.cartName}>{item.plato.nombre}</Text>
-              <Text style={styles.cartPrice}>{formatPrice(item.plato.precio)}</Text>
+              <Text style={styles.cartPrice}>
+                {formatPrice(item.plato.precio)}
+              </Text>
             </View>
 
             {/* Quantity Selector controls */}
@@ -227,11 +302,15 @@ export function CarritoView() {
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Costo de envío</Text>
-                <Text style={styles.summaryValue}>{formatPrice(costoEnvio)}</Text>
+                <Text style={styles.summaryValue}>
+                  {formatPrice(costoEnvio)}
+                </Text>
               </View>
               <View style={[styles.summaryRow, styles.summaryTotalRow]}>
                 <Text style={styles.summaryTotalLabel}>Total</Text>
-                <Text style={styles.summaryTotalValue}>{formatPrice(total)}</Text>
+                <Text style={styles.summaryTotalValue}>
+                  {formatPrice(total)}
+                </Text>
               </View>
             </View>
 
@@ -245,7 +324,12 @@ export function CarritoView() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
-                  <Ionicons name="wallet-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                  <Ionicons
+                    name="wallet-outline"
+                    size={20}
+                    color="#FFFFFF"
+                    style={{ marginRight: 8 }}
+                  />
                   <Text style={styles.payButtonText}>Confirmar pedido</Text>
                 </>
               )}
@@ -459,7 +543,10 @@ const styles = StyleSheet.create({
   payButtonDisabled: { opacity: 0.7 },
   payButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
   modalOverlay: { flex: 1, justifyContent: "flex-end" },
-  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
   paymentSheet: {
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
@@ -480,8 +567,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 20,
   },
-  paymentTitle: { fontSize: 20, fontWeight: "bold", color: "#1A202C", textAlign: "center" },
-  paymentSubtitle: { fontSize: 14, color: "#718096", textAlign: "center", marginTop: 4, marginBottom: 24 },
+  paymentTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1A202C",
+    textAlign: "center",
+  },
+  paymentSubtitle: {
+    fontSize: 14,
+    color: "#718096",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 24,
+  },
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",

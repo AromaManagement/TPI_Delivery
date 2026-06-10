@@ -77,6 +77,10 @@ export interface Comanda {
   cliente?: Pick<Usuario, "id" | "nombre" | "apellido"> | null;
   createdAt?: string;
   updatedAt?: string;
+  pago: {
+    estadoPago: "PENDIENTE" | "APROBADO" | "RECHAZADO" | "CANCELADO";
+    urlPago?: string;
+  };
 }
 
 export interface DetalleComanda {

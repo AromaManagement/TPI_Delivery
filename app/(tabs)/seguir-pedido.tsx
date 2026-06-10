@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -13,19 +13,60 @@ import { SeguirPedidoView } from "../../views/seguir-pedido.view";
 
 export default function SeguirPedidoScreen() {
   const { activeOrder, loading, checkActiveOrder } = useHomeController();
+  const lastOrderRef = useRef(activeOrder);
+  const [showCompleted, setShowCompleted] = useState(false);
 
-  // If loading is done and there is no active order, redirect back to the menu (Carta)
+  // Track the last known order so we can detect when it completes
+  useEffect(() => {
+    if (activeOrder) {
+      lastOrderRef.current = activeOrder;
+      setShowCompleted(false);
+    }
+  }, [activeOrder]);
+
   useEffect(() => {
     if (!loading && !activeOrder) {
-      router.replace("/(tabs)");
+      if (lastOrderRef.current) {
+        // Had an active order that just disappeared → show completion screen
+        setShowCompleted(true);
+      } else {
+        // Never had an order on this screen → go back to carta
+        router.replace("/(tabs)");
+      }
     }
   }, [loading, activeOrder]);
 
-  if (loading) {
+  if (loading && !activeOrder && !showCompleted) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#1A202C" />
         <Text style={styles.loadingText}>Verificando estado del pedido...</Text>
+      </View>
+    );
+  }
+
+  if (showCompleted) {
+    const orderId = lastOrderRef.current?.id;
+    return (
+      <View style={styles.centerContainer}>
+        <View style={styles.checkCircle}>
+          <Ionicons name="checkmark" size={52} color="#FFFFFF" />
+        </View>
+        <Text style={styles.completedTitle}>¡Pedido entregado!</Text>
+        <Text style={styles.completedSubtitle}>
+          {orderId ? `Pedido #${orderId} · ` : ""}
+          Gracias por tu compra. ¡Buen provecho!
+        </Text>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => {
+            lastOrderRef.current = null;
+            setShowCompleted(false);
+            router.replace("/(tabs)");
+          }}
+        >
+          <Text style={styles.menuButtonText}>Volver a la carta</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -56,6 +97,33 @@ const styles = StyleSheet.create({
     backgroundColor: "#F7FAFC",
     padding: 24,
   },
+  checkCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#38A169",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    shadowColor: "#38A169",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  completedTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#1A202C",
+    marginBottom: 10,
+  },
+  completedSubtitle: {
+    fontSize: 15,
+    color: "#718096",
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 22,
+  },
   loadingText: {
     marginTop: 12,
     fontSize: 15,
@@ -71,8 +139,8 @@ const styles = StyleSheet.create({
   menuButton: {
     backgroundColor: "#1A202C",
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
   },
   menuButtonText: {
     color: "#FFFFFF",

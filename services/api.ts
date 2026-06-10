@@ -22,6 +22,8 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   skipAuth?: boolean;
 }
 
+const REQUEST_TIMEOUT_MS = 10000;
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, skipAuth, headers, ...init } = options;
   const finalHeaders = new Headers(headers);
@@ -34,12 +36,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     }
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
     const response = await fetch(`${API_URL}${path}`, {
       ...init,
       headers: finalHeaders,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const text = await response.text();
     const payload = text ? JSON.parse(text) : null;
@@ -52,6 +59,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     // Backend typically wraps responses in { status, message, data }
     return payload?.data !== undefined ? payload.data : payload;
   } catch (error) {
+    clearTimeout(timeoutId);
     if (error instanceof ApiError) {
       throw error;
     }

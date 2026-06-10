@@ -1,4 +1,3 @@
-import { Alert } from "react-native";
 import { Comanda } from "../models";
 import { api } from "./api";
 
@@ -8,10 +7,7 @@ export const comandaService = {
     try {
       return await api.get<Comanda | null>(`/comandas/active`);
     } catch (error) {
-      Alert.alert(
-        "Error",
-        "Failed to fetch active order. Please try again later.",
-      );
+      // Silently return null — the caller (_layout) handles this gracefully
       return null;
     }
   },

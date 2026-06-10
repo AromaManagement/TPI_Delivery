@@ -34,3 +34,12 @@ export const comandaService = {
     }
   },
 };
+
+export const cancelarComanda = async (comandaId: number): Promise<void> => {
+  try {
+    return await api.post(`/comandas/${comandaId}/cancelar`);
+  } catch (error) {
+    console.error("Error canceling order:", error);
+    throw new Error("Failed to cancel order. Please try again later.");
+  }
+};

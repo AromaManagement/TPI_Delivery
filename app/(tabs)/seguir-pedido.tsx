@@ -1,8 +1,10 @@
+import { cancelarComanda } from "@/services/comanda.service";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   StyleSheet,
   Text,
@@ -91,7 +93,9 @@ export default function SeguirPedidoScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#1A202C" />
-        <Text style={styles.loadingText}></Text>
+        <Text style={styles.loadingText}>
+          Esperando confirmación de pago...
+        </Text>
 
         <TouchableOpacity
           style={[styles.menuButton, { marginTop: 24, width: "60%" }]}
@@ -108,8 +112,22 @@ export default function SeguirPedidoScreen() {
             { marginTop: 12, width: "60%", backgroundColor: "#E53E3E" },
           ]}
           onPress={() => {
-            console.log("Cancelar pedido"); // Aquí iría la lógica para cancelar el pedido, como llamar a un endpoint de cancelación en el backend
-            // Cancelar pedido
+            cancelarComanda(activeOrder.id)
+              .then(() => {
+                Alert.alert(
+                  "Pedido cancelado",
+                  "Tu pedido ha sido cancelado con éxito.",
+                );
+                lastOrderRef.current = null;
+                setShowCompleted(false);
+                router.replace("/(tabs)");
+              })
+              .catch((error) => {
+                Alert.alert(
+                  "Error",
+                  "No se pudo cancelar el pedido. Por favor, intenta de nuevo más tarde.",
+                );
+              });
           }}
         >
           <Text style={[styles.menuButtonText, { textAlign: "center" }]}>

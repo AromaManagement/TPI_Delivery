@@ -252,8 +252,16 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
               style={[styles.contactButton, { backgroundColor: "#25D366" }]}
               onPress={() => {
                 const nombreRepartidor = order.repartidor?.nombre || "Repartidor";
+                const telefonoRepartidor = order.repartidor?.telefono;
                 const text = encodeURIComponent(`Hola ${nombreRepartidor}, te escribo por el pedido #${order.id} de Aroma Delivery.`);
-                Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
+                
+                if (telefonoRepartidor) {
+                  const cleanPhone = telefonoRepartidor.replace(/\D/g, "");
+                  const finalPhone = cleanPhone.startsWith("54") ? cleanPhone : `549${cleanPhone}`;
+                  Linking.openURL(`https://wa.me/${finalPhone}?text=${text}`);
+                } else {
+                  Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
+                }
               }}
             >
               <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />

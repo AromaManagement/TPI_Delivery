@@ -84,6 +84,16 @@ export function PerfilView() {
             </View>
           </View>
 
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconWrapper}>
+              <Ionicons name="call-outline" size={20} color="#4A5568" />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Teléfono</Text>
+              <Text style={styles.infoValue}>{user.telefono || "No registrado"}</Text>
+            </View>
+          </View>
+
           {user.documento && (
             <View style={styles.infoRow}>
               <View style={styles.infoIconWrapper}>

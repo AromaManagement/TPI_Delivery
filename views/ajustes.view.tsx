@@ -24,6 +24,7 @@ export function AjustesView() {
   const [apellido, setApellido] = useState(user.apellido);
   const [tipoDocumento, setTipoDocumento] = useState(user.tipoDocumento || "DNI");
   const [documento, setDocumento] = useState(user.documento || "");
+  const [telefono, setTelefono] = useState(user.telefono || "");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -41,6 +42,7 @@ export function AjustesView() {
       apellido,
       tipoDocumento,
       documento,
+      telefono: telefono.trim() || null,
     });
 
     if (result.ok) {
@@ -127,6 +129,18 @@ export function AjustesView() {
                 value={documento}
                 onChangeText={setDocumento}
                 keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Teléfono</Text>
+              <TextInput
+                style={styles.inputInput}
+                placeholder="2614001122"
+                placeholderTextColor="#A0AEC0"
+                value={telefono}
+                onChangeText={setTelefono}
+                keyboardType="phone-pad"
               />
             </View>
 

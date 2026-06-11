@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Dimensions,
   SafeAreaView,
@@ -8,9 +8,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Linking,
 } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { Comanda } from "../models";
+import { useGeocoding, RESTAURANT_COORDS } from "../hooks/useGeocoding";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -20,45 +22,32 @@ interface SeguirPedidoViewProps {
 }
 
 export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
+  const { coords: destCoords, route } = useGeocoding(order.direccion);
+  const mapRef = useRef<MapView>(null);
+
+  const originLat = RESTAURANT_COORDS.latitude;
+  const originLng = RESTAURANT_COORDS.longitude;
+  const destLat = destCoords.latitude;
+  const destLng = destCoords.longitude;
+
+  // Automatically adjust map viewpoint when destination coordinates change
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.fitToCoordinates(
+        [
+          { latitude: originLat, longitude: originLng },
+          { latitude: destLat, longitude: destLng },
+        ],
+        {
+          edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+          animated: true,
+        }
+      );
+    }
+  }, [destLat, destLng]);
+
   // Extract coordinate data
   const estadoComanda = order.estadoComanda;
-
-  // Origin (Restaurant)
-  let originLat = -32.8897;
-  let originLng = -68.845;
-
-  // Destination (Customer)
-  let destLat = -32.8943;
-  let destLng = -68.8385;
-
-  // Map coordinate translation onto 2D coordinate box (width: MAP_WIDTH, height: MAP_HEIGHT)
-  const MAP_HEIGHT = 220;
-  const MAP_WIDTH = SCREEN_WIDTH - 32;
-
-  // Extents for mapping bounds
-  const minLat = Math.min(originLat, destLat) - 0.002;
-  const maxLat = Math.max(originLat, destLat) + 0.002;
-  const minLng = Math.min(originLng, destLng) - 0.002;
-  const maxLng = Math.max(originLng, destLng) + 0.002;
-
-  const latToY = (lat: number) => {
-    return MAP_HEIGHT - ((lat - minLat) / (maxLat - minLat)) * MAP_HEIGHT;
-  };
-
-  const lngToX = (lng: number) => {
-    return ((lng - minLng) / (maxLng - minLng)) * MAP_WIDTH;
-  };
-
-  // Get 2D positions of restaurant, driver, and home
-  const restX = lngToX(originLng);
-  const restY = latToY(originLat);
-
-  const homeX = lngToX(destLng);
-  const homeY = latToY(destLat);
-
-  // TODO fix
-  const driverX = lngToX(destLng);
-  const driverY = latToY(destLat);
 
   // Status descriptive text
   let statusTitle = "Pedido recibido";
@@ -101,6 +90,7 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
         {/* Real Interactive Map Box */}
         <View style={styles.mapContainer}>
           <MapView
+            ref={mapRef}
             style={StyleSheet.absoluteFillObject}
             initialRegion={{
               latitude: (originLat + destLat) / 2,
@@ -137,13 +127,9 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
               </View>
             </Marker>
 
-            {/* Route path line following streets (Av. Belgrano & Av. Emilio Civit) */}
+            {/* Route path line directly to the customer */}
             <Polyline
-              coordinates={[
-                { latitude: originLat, longitude: originLng }, // Restaurant
-                { latitude: destLat, longitude: originLng }, // Corner of Belgrano & Emilio Civit
-                { latitude: destLat, longitude: destLng }, // Domicilio
-              ]}
+              coordinates={route}
               strokeColor="#3182CE"
               strokeWidth={4}
             />
@@ -262,8 +248,15 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
                 {order.repartidor?.nombre || "No asignado"}
               </Text>
             </View>
-            <TouchableOpacity style={styles.contactButton}>
-              <Ionicons name="call" size={16} color="#FFFFFF" />
+            <TouchableOpacity 
+              style={[styles.contactButton, { backgroundColor: "#25D366" }]}
+              onPress={() => {
+                const nombreRepartidor = order.repartidor?.nombre || "Repartidor";
+                const text = encodeURIComponent(`Hola ${nombreRepartidor}, te escribo por el pedido #${order.id} de Aroma Delivery.`);
+                Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
+              }}
+            >
+              <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
 

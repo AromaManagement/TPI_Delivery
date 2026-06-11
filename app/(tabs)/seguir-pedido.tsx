@@ -89,7 +89,7 @@ export default function SeguirPedidoScreen() {
     );
   }
 
-  if (activeOrder.pago.estadoPago === "PENDIENTE") {
+  if (activeOrder.pago?.estadoPago === "PENDIENTE") {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#1A202C" />
@@ -99,7 +99,7 @@ export default function SeguirPedidoScreen() {
 
         <TouchableOpacity
           style={[styles.menuButton, { marginTop: 24, width: "60%" }]}
-          onPress={() => Linking.openURL(activeOrder.pago.urlPago || "")}
+          onPress={() => Linking.openURL(activeOrder.pago?.urlPago || "")}
         >
           <Text style={[styles.menuButtonText, { textAlign: "center" }]}>
             Ir a pagar

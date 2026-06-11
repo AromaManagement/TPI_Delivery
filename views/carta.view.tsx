@@ -18,6 +18,9 @@ import { useCartStore } from "../store/cartStore";
 import { useHomeController } from "../controllers/home.controller";
 import { router } from "expo-router";
 import { Plato, Seccion } from "../models";
+import { useAuthStore } from "../store/authStore";
+import { direccionService } from "../services/direccion.service";
+import { DireccionModal } from "../components/DireccionModal";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -43,6 +46,31 @@ export function CartaView() {
 
   const { hasActiveOrder } = useHomeController();
   const addItem = useCartStore((state) => state.addItem);
+
+  const user = useAuthStore((state) => state.user);
+  const [direccion, setDireccion] = React.useState<string | null>(null);
+  const [showDireccionModal, setShowDireccionModal] = React.useState(false);
+  const [loadingDireccion, setLoadingDireccion] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user?.direccionId) {
+      setLoadingDireccion(true);
+      direccionService
+        .getDireccion(user.direccionId)
+        .then((dir) => {
+          setDireccion(`${dir.calle} ${dir.numeracion} (${dir.barrio || ""})`);
+        })
+        .catch((err) => {
+          console.error("Error loading address:", err);
+          setDireccion("Error al cargar dirección");
+        })
+        .finally(() => {
+          setLoadingDireccion(false);
+        });
+    } else {
+      setDireccion(null);
+    }
+  }, [user?.direccionId]);
   const cartItems = useCartStore((state) => state.items);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const [sheetQuantity, setSheetQuantity] = React.useState(1);
@@ -106,7 +134,28 @@ export function CartaView() {
     <SafeAreaView style={styles.container}>
       {/* Header bar */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Nuestra Carta</Text>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>Aroma Delivery</Text>
+          <TouchableOpacity
+            style={[styles.addressBar, !direccion && styles.addressBarWarning]}
+            onPress={() => setShowDireccionModal(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={direccion ? "location-outline" : "warning-outline"}
+              size={14}
+              color={direccion ? "#4A5568" : "#E53E3E"}
+            />
+            <Text style={[styles.addressText, !direccion && styles.noAddressText]} numberOfLines={1}>
+              {loadingDireccion
+                ? "Buscando ubicación..."
+                : direccion
+                ? `Enviar a: ${direccion}`
+                : "Seleccionar dirección de envío ⚠️"}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={direccion ? "#718096" : "#E53E3E"} style={{ marginLeft: 2 }} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Sticky horizontal categories tab bar */}
@@ -376,6 +425,14 @@ export function CartaView() {
           </View>
         )}
       </Modal>
+
+      <DireccionModal
+        visible={showDireccionModal}
+        onClose={() => setShowDireccionModal(false)}
+        onSaveSuccess={(newDir) => {
+          setDireccion(`${newDir.calle} ${newDir.numeracion} (${newDir.barrio || ""})`);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -422,16 +479,49 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   header: {
-    height: 56,
+    paddingVertical: 8,
     justifyContent: "center",
     alignItems: "center",
     borderBottomWidth: 1,
     borderBottomColor: "#F7FAFC",
+    backgroundColor: "#FFFFFF",
+  },
+  headerTitleContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#1A202C",
+  },
+  addressBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: "#F7FAFC",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    maxWidth: "85%",
+  },
+  addressBarWarning: {
+    backgroundColor: "#FFF5F5",
+    borderColor: "#FED2D2",
+  },
+  addressText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#4A5568",
+    marginLeft: 4,
+    marginRight: 2,
+  },
+  noAddressText: {
+    color: "#E53E3E",
+    fontWeight: "bold",
   },
   tabBarWrapper: {
     borderBottomWidth: 1,

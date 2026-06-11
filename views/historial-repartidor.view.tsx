@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import {
   View,
@@ -5,7 +6,6 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  SafeAreaView,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

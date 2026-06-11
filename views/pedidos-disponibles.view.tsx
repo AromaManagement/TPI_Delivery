@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import {
   View,
@@ -7,8 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
-  SafeAreaView,
-} from "react-native";
+  } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { usePedidosDisponiblesController } from "../controllers/repartidor.controller";
 import { Comanda } from "../models";

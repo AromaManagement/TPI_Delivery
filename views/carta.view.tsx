@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import {
   StyleSheet,
@@ -8,7 +9,6 @@ import {
   Image,
   ActivityIndicator,
   Modal,
-  SafeAreaView,
   Dimensions,
   Alert,
 } from "react-native";

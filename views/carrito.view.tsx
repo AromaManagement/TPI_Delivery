@@ -13,9 +13,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { comandaService } from "../services/comanda.service";
+import * as WebBrowser from "expo-web-browser";
+import * as ExpoLinking from "expo-linking";
+import { comandaService, cancelarComanda } from "../services/comanda.service";
 import { useAuthStore } from "../store/authStore";
 import { useCartStore } from "../store/cartStore";
+import { direccionService } from "../services/direccion.service";
+import { DireccionModal } from "../components/DireccionModal";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const formatPrice = (value: number) => {
   return `$ ${value.toLocaleString("es-AR", {
@@ -30,6 +36,60 @@ export function CarritoView() {
     useCartStore();
   const [loading, setLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [direccion, setDireccion] = useState<string | null>(null);
+  const [showDireccionModal, setShowDireccionModal] = useState(false);
+  const [loadingDireccion, setLoadingDireccion] = useState(false);
+
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [createdComandaId, setCreatedComandaId] = useState<number | null>(null);
+  const [pollingIntervalId, setPollingIntervalId] = useState<any>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (pollingIntervalId) {
+        clearInterval(pollingIntervalId);
+      }
+    };
+  }, [pollingIntervalId]);
+
+  const handleCancelVerification = async () => {
+    if (pollingIntervalId) {
+      clearInterval(pollingIntervalId);
+      setPollingIntervalId(null);
+    }
+    setShowPendingModal(false);
+    setLoading(false);
+    
+    if (createdComandaId) {
+      try {
+        await cancelarComanda(createdComandaId);
+        console.log(`[Checkout] Comanda #${createdComandaId} cancelada.`);
+      } catch (err) {
+        console.error("Error canceling unpaid comanda:", err);
+      }
+      setCreatedComandaId(null);
+    }
+  };
+
+  React.useEffect(() => {
+    if (user?.direccionId) {
+      setLoadingDireccion(true);
+      direccionService
+        .getDireccion(user.direccionId)
+        .then((dir) => {
+          setDireccion(`${dir.calle} ${dir.numeracion} (${dir.barrio || ""})`);
+        })
+        .catch((err) => {
+          console.error("Error loading address in cart:", err);
+          setDireccion("Error al cargar dirección");
+        })
+        .finally(() => {
+          setLoadingDireccion(false);
+        });
+    } else {
+      setDireccion(null);
+    }
+  }, [user?.direccionId]);
   const [selectedPayment, setSelectedPayment] = useState<
     "efectivo" | "mercadopago" | null
   >(null);
@@ -47,34 +107,112 @@ export function CarritoView() {
       Alert.alert("Pedido vacío", "Agregue platos antes de confirmar.");
       return;
     }
+    if (!user.direccionId) {
+      Alert.alert(
+        "Dirección requerida",
+        "Por favor ingresá tu dirección de envío para continuar.",
+        [
+          { text: "Agregar dirección", onPress: () => setShowDireccionModal(true) },
+          { text: "Cancelar", style: "cancel" }
+        ]
+      );
+      return;
+    }
     setSelectedPayment(null);
     setShowPaymentModal(true);
   };
 
   const handleCheckout = async () => {
-    if (!selectedPayment) {
-      Alert.alert("Seleccioná un método de pago.");
+    if (!direccion) {
+      Alert.alert("Error", "Por favor ingresa una dirección de entrega.");
       return;
     }
-    setShowPaymentModal(false);
+    if (!selectedPayment) {
+      Alert.alert("Error", "Por favor selecciona un método de pago.");
+      return;
+    }
+    if (!user) {
+      Alert.alert("Error", "Inicia sesión para realizar un pedido.");
+      return;
+    }
     setLoading(true);
+    setShowPaymentModal(false);
+
     try {
       const newComanda = await comandaService.crearComanda(
-        user!.id,
+        user.id,
         items,
         selectedPayment.toUpperCase(),
       );
-      if (!!newComanda.pago.urlPago) {
-        Linking.openURL(newComanda.pago.urlPago);
-      }
 
-      router.replace("/(tabs)/seguir-pedido" as any);
-      setTimeout(() => {
+      if (selectedPayment === "mercadopago") {
+        if (newComanda.pago?.urlPago) {
+          const urlPago = newComanda.pago.urlPago;
+          setCreatedComandaId(newComanda.id);
+          setShowPendingModal(true);
+
+          console.log("[Checkout] Abriendo Mercado Pago en navegador seguro:", urlPago);
+          WebBrowser.openBrowserAsync(urlPago).catch((err) => {
+            console.error("Failed to open browser:", err);
+            Linking.openURL(urlPago);
+          });
+
+          const interval = setInterval(async () => {
+            try {
+              const activeOrder = await comandaService.getActiveOrder();
+              
+              if (activeOrder && activeOrder.id === newComanda.id) {
+                const estado = activeOrder.estadoComanda as string;
+                console.log("[Checkout Polling] Estado de la orden:", estado);
+                
+                if (estado !== "SIN_PAGAR" && estado !== "CANCELADO") {
+                  clearInterval(interval);
+                  setPollingIntervalId(null);
+                  setCreatedComandaId(null);
+                  setLoading(false);
+                  setShowPendingModal(false);
+                  WebBrowser.dismissBrowser();
+                  
+                  Alert.alert("Éxito", "¡Pago confirmado! Tu pedido ha sido recibido.");
+                  router.replace("/(tabs)/seguir-pedido" as any);
+                  clearCart();
+                } else if (estado === "CANCELADO") {
+                  clearInterval(interval);
+                  setPollingIntervalId(null);
+                  setCreatedComandaId(null);
+                  setLoading(false);
+                  setShowPendingModal(false);
+                  WebBrowser.dismissBrowser();
+                  Alert.alert("Pago fallido", "El pago de Mercado Pago fue rechazado o cancelado.");
+                }
+              } else {
+                clearInterval(interval);
+                setPollingIntervalId(null);
+                setCreatedComandaId(null);
+                setLoading(false);
+                setShowPendingModal(false);
+                WebBrowser.dismissBrowser();
+                Alert.alert("Pago cancelado", "El pedido fue cancelado.");
+              }
+            } catch (pollErr) {
+              console.error("[Checkout Polling] Error checking payment:", pollErr);
+            }
+          }, 3000);
+
+          setPollingIntervalId(interval);
+        } else {
+          Alert.alert("Error", "No se recibió la URL de pago de Mercado Pago.");
+          setLoading(false);
+        }
+      } else {
+        // EFECTIVO
+        Alert.alert("Pedido Confirmado", "Tu pedido ha sido recibido. Pagás al recibir.");
+        router.replace("/(tabs)/seguir-pedido" as any);
         clearCart();
-      }, 3000);
+        setLoading(false);
+      }
     } catch (error: any) {
       Alert.alert("Error", error.message || "No se pudo realizar el pedido.");
-    } finally {
       setLoading(false);
     }
   };
@@ -235,6 +373,34 @@ export function CarritoView() {
         </View>
       </Modal>
 
+      {/* Pending Payment confirmation polling overlay */}
+      <Modal
+        visible={showPendingModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.centerModalOverlay}>
+          <View style={styles.pendingSheet}>
+            <ActivityIndicator size="large" color="#E53E3E" style={{ marginBottom: 20 }} />
+            <Text style={styles.pendingTitle}>Esperando confirmación del pago</Text>
+            <Text style={styles.pendingSubtitle}>
+              Por favor, completa el pago en la ventana de Mercado Pago.
+            </Text>
+            <Text style={styles.pendingSubtext}>
+              Esta ventana se cerrará automáticamente una vez confirmado el pago.
+            </Text>
+            
+            <TouchableOpacity
+              style={styles.cancelPendingBtn}
+              onPress={handleCancelVerification}
+            >
+              <Text style={styles.cancelPendingText}>Cancelar verificación</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <FlatList
         data={items}
         keyExtractor={(item) => item.plato.id.toString()}
@@ -279,17 +445,28 @@ export function CarritoView() {
           <View style={styles.footerContainer}>
             {/* Delivery Details Card */}
             <View style={styles.detailsCard}>
-              <Text style={styles.detailsTitle}>Detalles de Entrega</Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <Text style={[styles.detailsTitle, { marginBottom: 0 }]}>Detalles de Entrega</Text>
+                <TouchableOpacity onPress={() => setShowDireccionModal(true)}>
+                  <Text style={{ fontSize: 13, fontWeight: "bold", color: "#E53E3E" }}>
+                    {direccion ? "Cambiar" : "Agregar"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.detailRow}>
-                <Ionicons name="location-outline" size={18} color="#4A5568" />
-                <Text style={styles.detailText}>
-                  Av. Emilio Civit 450, Quinta Sección, Mendoza
+                <Ionicons name="location-outline" size={18} color={direccion ? "#4A5568" : "#E53E3E"} />
+                <Text style={[styles.detailText, !direccion && { color: "#E53E3E", fontWeight: "bold" }]}>
+                  {loadingDireccion
+                    ? "Cargando dirección..."
+                    : direccion
+                    ? direccion
+                    : "No has ingresado una dirección de entrega."}
                 </Text>
               </View>
               <View style={styles.detailRow}>
                 <Ionicons name="card-outline" size={18} color="#4A5568" />
                 <Text style={styles.detailText}>
-                  Método de pago: Tarjeta de Crédito/Débito (Simulado)
+                  Método de pago: {selectedPayment === "efectivo" ? "Efectivo" : selectedPayment === "mercadopago" ? "Mercado Pago" : "Seleccionar al confirmar"}
                 </Text>
               </View>
             </View>
@@ -336,6 +513,14 @@ export function CarritoView() {
             </TouchableOpacity>
           </View>
         }
+      />
+
+      <DireccionModal
+        visible={showDireccionModal}
+        onClose={() => setShowDireccionModal(false)}
+        onSaveSuccess={(newDir) => {
+          setDireccion(`${newDir.calle} ${newDir.numeracion} (${newDir.barrio || ""})`);
+        }}
       />
     </SafeAreaView>
   );
@@ -620,4 +805,58 @@ const styles = StyleSheet.create({
   },
   confirmPaymentBtnDisabled: { backgroundColor: "#CBD5E0" },
   confirmPaymentText: { color: "#FFFFFF", fontSize: 16, fontWeight: "bold" },
+  centerModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  pendingSheet: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 30,
+    width: "100%",
+    maxWidth: 340,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  pendingTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A202C",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  pendingSubtitle: {
+    fontSize: 14,
+    color: "#4A5568",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  pendingSubtext: {
+    fontSize: 12,
+    color: "#718096",
+    textAlign: "center",
+    lineHeight: 18,
+    marginBottom: 24,
+  },
+  cancelPendingBtn: {
+    backgroundColor: "#EDF2F7",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    width: "100%",
+    alignItems: "center",
+  },
+  cancelPendingText: {
+    color: "#4A5568",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
 });

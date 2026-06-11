@@ -1,6 +1,9 @@
-import { authService, LoginInput, RegisterInput } from "../services/auth.service";
+import {
+  authService,
+  LoginInput,
+  RegisterInput,
+} from "../services/auth.service";
 import { useAuthStore } from "../store/authStore";
-import { resetSimulation } from "../services/comanda.service";
 import { Usuario } from "../models";
 
 export interface ActionResult {
@@ -27,19 +30,17 @@ export const authController = {
 
     try {
       const { token, user } = await authService.login(input);
-      
+
       if (user.rol !== "CLIENTE" && user.rol !== "REPARTIDOR") {
         return {
           ok: false,
-          error: "Acceso denegado. Esta aplicación es para clientes y repartidores.",
+          error:
+            "Acceso denegado. Esta aplicación es para clientes y repartidores.",
         };
       }
 
       // Update the state store
       useAuthStore.getState().setSession(token, user);
-      
-      // Reset order tracking simulation upon new login
-      resetSimulation();
 
       return { ok: true };
     } catch (error: any) {
@@ -58,7 +59,10 @@ export const authController = {
       return { ok: false, error: "Ingresá un correo electrónico válido." };
     }
     if (input.contrasena.length < 6) {
-      return { ok: false, error: "La contraseña debe tener al menos 6 caracteres." };
+      return {
+        ok: false,
+        error: "La contraseña debe tener al menos 6 caracteres.",
+      };
     }
     try {
       const { token, user } = await authService.register(input);
@@ -69,7 +73,9 @@ export const authController = {
     }
   },
 
-  updateUserAction: async (updatedFields: Partial<Usuario>): Promise<ActionResult> => {
+  updateUserAction: async (
+    updatedFields: Partial<Usuario>,
+  ): Promise<ActionResult> => {
     const store = useAuthStore.getState();
     if (!store.user) {
       return { ok: false, error: "No hay una sesión activa." };
@@ -78,14 +84,20 @@ export const authController = {
     try {
       let updatedUser: Usuario;
       try {
-        updatedUser = await authService.updateProfile(store.user.id, updatedFields);
+        updatedUser = await authService.updateProfile(
+          store.user.id,
+          updatedFields,
+        );
       } catch {
         updatedUser = { ...store.user, ...updatedFields };
       }
       store.setSession(store.token || "", updatedUser);
       return { ok: true };
     } catch (error: any) {
-      return { ok: false, error: error.message || "Error al actualizar el perfil." };
+      return {
+        ok: false,
+        error: error.message || "Error al actualizar el perfil.",
+      };
     }
   },
 

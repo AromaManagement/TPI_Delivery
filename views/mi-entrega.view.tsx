@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,9 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { useMiEntregaController } from "../controllers/repartidor.controller";
 import { EstadoComanda } from "../models";
+import { useGeocoding, RESTAURANT_COORDS } from "../hooks/useGeocoding";
 
-const RESTAURANT_COORDS = { latitude: -32.8897, longitude: -68.845 };
-const CUSTOMER_COORDS = { latitude: -32.8943, longitude: -68.8385 };
 const MAP_REGION = {
   latitude: -32.892,
   longitude: -68.8418,
@@ -50,6 +49,25 @@ function EstadoBadge({ estado }: { estado: EstadoComanda | null | undefined }) {
 export function MiEntregaView() {
   const { pedidoActivo, loading, loadingInit, marcarEnCamino, confirmarEntrega } =
     useMiEntregaController();
+
+  const { coords: destCoords, route } = useGeocoding(pedidoActivo?.direccion);
+  const mapRef = useRef<MapView>(null);
+
+  // Automatically adjust map viewpoint when destination coordinates change
+  useEffect(() => {
+    if (mapRef.current && pedidoActivo?.direccion) {
+      mapRef.current.fitToCoordinates(
+        [
+          RESTAURANT_COORDS,
+          destCoords,
+        ],
+        {
+          edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+          animated: true,
+        }
+      );
+    }
+  }, [destCoords]);
 
   if (loadingInit) {
     return (
@@ -99,10 +117,9 @@ export function MiEntregaView() {
     : "Sin dirección";
 
   const handleLlamar = () => {
-    const telefono = cliente?.telefono;
-    if (telefono) {
-      Linking.openURL(`tel:${telefono}`);
-    }
+    const nombreCliente = cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente";
+    const text = encodeURIComponent(`Hola ${nombreCliente}, soy tu repartidor de Aroma Delivery y voy en camino con tu pedido #${pedidoActivo.id}.`);
+    Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
   };
 
   return (
@@ -132,11 +149,12 @@ export function MiEntregaView() {
                   ? `${cliente.nombre} ${cliente.apellido}`
                   : "Cliente"}
               </Text>
-              {cliente?.telefono && (
-                <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
-                  <Ionicons name="call" size={18} color="#FFFFFF" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity 
+                style={[styles.callButton, { backgroundColor: "#25D366" }]} 
+                onPress={handleLlamar}
+              >
+                <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -164,11 +182,15 @@ export function MiEntregaView() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Ruta de entrega</Text>
           <View style={styles.mapContainer}>
-            <MapView style={StyleSheet.absoluteFillObject} initialRegion={MAP_REGION}>
+            <MapView
+              ref={mapRef}
+              style={StyleSheet.absoluteFillObject}
+              initialRegion={MAP_REGION}
+            >
               <Marker coordinate={RESTAURANT_COORDS} title="Restaurante" pinColor="#E53E3E" />
-              <Marker coordinate={CUSTOMER_COORDS} title="Destino" pinColor="#38A169" />
+              <Marker coordinate={destCoords} title="Destino" pinColor="#38A169" />
               <Polyline
-                coordinates={[RESTAURANT_COORDS, CUSTOMER_COORDS]}
+                coordinates={route}
                 strokeColor="#3182CE"
                 strokeWidth={3}
               />

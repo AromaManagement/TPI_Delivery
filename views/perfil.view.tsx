@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -11,9 +11,32 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuthStore } from "../store/authStore";
 import { authController } from "../controllers/auth.controller";
+import { direccionService } from "../services/direccion.service";
 
 export function PerfilView() {
   const user = useAuthStore((state) => state.user);
+  const [direccion, setDireccion] = useState<string | null>(null);
+  const [loadingDir, setLoadingDir] = useState(false);
+
+  useEffect(() => {
+    if (user?.direccionId) {
+      setLoadingDir(true);
+      direccionService
+        .getDireccion(user.direccionId)
+        .then((dir) => {
+          setDireccion(`${dir.calle} ${dir.numeracion}${dir.barrio ? `, ${dir.barrio}` : ""}`);
+        })
+        .catch((err) => {
+          console.error("Error loading address in profile:", err);
+          setDireccion("Error al cargar dirección");
+        })
+        .finally(() => {
+          setLoadingDir(false);
+        });
+    } else {
+      setDireccion(null);
+    }
+  }, [user?.direccionId]);
 
   const handleLogout = async () => {
     await authController.logoutAction();
@@ -81,7 +104,7 @@ export function PerfilView() {
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Dirección de entrega</Text>
                 <Text style={styles.infoValue}>
-                  {user.direccionId ? "Av. Emilio Civit 450, Quinta Sección" : "No registrada"}
+                  {loadingDir ? "Cargando..." : direccion || "No registrada"}
                 </Text>
               </View>
             </View>

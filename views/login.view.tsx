@@ -39,19 +39,6 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
     }
   };
 
-  const handleQuickLogin = (role: "client" | "admin" | "repartidor") => {
-    if (role === "client") {
-      setCorreo("cliente@aromas.com");
-      setContrasena("12345678");
-    } else if (role === "repartidor") {
-      setCorreo("repartidor@aromas.com");
-      setContrasena("12345678");
-    } else {
-      setCorreo("admin@aromas.com");
-      setContrasena("12345678");
-    }
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -138,30 +125,6 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
           <TouchableOpacity onPress={() => router.push("/registro" as any)}>
             <Text style={styles.registerLink}>Registrate</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Testing / Quick Access Section */}
-        <View style={styles.quickAccessCard}>
-          <Text style={styles.quickAccessTitle}>Acceso de Prueba</Text>
-          <Text style={styles.quickAccessSubtitle}>
-            Presione un botón para rellenar los datos rápidamente:
-          </Text>
-          <View style={styles.quickAccessButtons}>
-            <TouchableOpacity
-              style={styles.quickButton}
-              onPress={() => handleQuickLogin("client")}
-            >
-              <Ionicons name="person-outline" size={16} color="#2D3748" />
-              <Text style={styles.quickButtonText}>Cliente</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickButton}
-              onPress={() => handleQuickLogin("repartidor")}
-            >
-              <Ionicons name="bicycle-outline" size={16} color="#2D3748" />
-              <Text style={styles.quickButtonText}>Repartidor</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -293,52 +256,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  quickAccessCard: {
-    marginTop: 24,
-    backgroundColor: "#EDF2F7",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  quickAccessTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#2D3748",
-    textAlign: "center",
-  },
-  quickAccessSubtitle: {
-    fontSize: 13,
-    color: "#718096",
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  quickAccessButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  quickButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#CBD5E0",
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  quickButtonText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#2D3748",
   },
   registerLinkContainer: {
     flexDirection: "row",

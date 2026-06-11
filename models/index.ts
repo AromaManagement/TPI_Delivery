@@ -55,6 +55,13 @@ export type EstadoComanda =
   | "ENTREGADO"
   | "CANCELADO";
 
+export interface Localidad {
+  id: number;
+  nombre: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Direccion {
   id: number;
   barrio?: string | null;
@@ -63,6 +70,16 @@ export interface Direccion {
   numeracion?: string | null;
   referencia?: string | null;
   casaDepto?: string | null;
+  localidadId: number;
+}
+
+export interface CreateDireccionInput {
+  calle?: string | null;
+  numeracion?: string | null;
+  barrio?: string | null;
+  manzanaPiso?: string | null;
+  casaDepto?: string | null;
+  referencia?: string | null;
   localidadId: number;
 }
 
@@ -78,10 +95,10 @@ export interface Comanda {
   cliente?: Pick<Usuario, "id" | "nombre" | "apellido" | "telefono"> | null;
   createdAt?: string;
   updatedAt?: string;
-  pago: {
+  pago?: {
     estadoPago: "PENDIENTE" | "APROBADO" | "RECHAZADO" | "CANCELADO";
     urlPago?: string;
-  };
+  } | null;
 }
 
 export interface DetalleComanda {

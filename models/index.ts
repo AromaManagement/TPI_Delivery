@@ -55,13 +55,6 @@ export type EstadoComanda =
   | "ENTREGADO"
   | "CANCELADO";
 
-export interface Localidad {
-  id: number;
-  nombre: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
 export interface Direccion {
   id: number;
   barrio?: string | null;
@@ -70,7 +63,9 @@ export interface Direccion {
   numeracion?: string | null;
   referencia?: string | null;
   casaDepto?: string | null;
-  localidadId: number;
+  lat?: number | null;
+  lng?: number | null;
+  etiqueta?: string | null;
 }
 
 export interface CreateDireccionInput {
@@ -80,7 +75,9 @@ export interface CreateDireccionInput {
   manzanaPiso?: string | null;
   casaDepto?: string | null;
   referencia?: string | null;
-  localidadId: number;
+  lat?: number | null;
+  lng?: number | null;
+  etiqueta?: string | null;
 }
 
 export interface Comanda {

@@ -77,7 +77,7 @@ export function CarritoView() {
       direccionService
         .getDireccion(user.direccionId)
         .then((dir) => {
-          setDireccion(`${dir.calle} ${dir.numeracion} (${dir.barrio || ""})`);
+          setDireccion(`${dir.calle} ${dir.numeracion}${dir.barrio ? ` (${dir.barrio})` : ""}`);
         })
         .catch((err) => {
           console.error("Error loading address in cart:", err);
@@ -95,8 +95,7 @@ export function CarritoView() {
   >(null);
 
   const subtotal = getTotal();
-  const costoEnvio = subtotal > 0 ? 800 : 0;
-  const total = subtotal + costoEnvio;
+  const total = subtotal;
 
   const openPaymentModal = () => {
     if (!user) {
@@ -477,12 +476,7 @@ export function CarritoView() {
                 <Text style={styles.summaryLabel}>Subtotal</Text>
                 <Text style={styles.summaryValue}>{formatPrice(subtotal)}</Text>
               </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Costo de envío</Text>
-                <Text style={styles.summaryValue}>
-                  {formatPrice(costoEnvio)}
-                </Text>
-              </View>
+
               <View style={[styles.summaryRow, styles.summaryTotalRow]}>
                 <Text style={styles.summaryTotalLabel}>Total</Text>
                 <Text style={styles.summaryTotalValue}>

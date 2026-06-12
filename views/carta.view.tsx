@@ -58,7 +58,7 @@ export function CartaView() {
       direccionService
         .getDireccion(user.direccionId)
         .then((dir) => {
-          setDireccion(`${dir.calle} ${dir.numeracion} (${dir.barrio || ""})`);
+          setDireccion(`${dir.calle} ${dir.numeracion}${dir.barrio ? ` (${dir.barrio})` : ""}`);
         })
         .catch((err) => {
           console.error("Error loading address:", err);

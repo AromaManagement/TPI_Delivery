@@ -2,6 +2,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
+  Alert,
   Dimensions,
   ScrollView,
   StyleSheet,
@@ -245,27 +246,39 @@ export function SeguirPedidoView({ order, onRefresh }: SeguirPedidoViewProps) {
             <View style={styles.detailTextContainer}>
               <Text style={styles.detailLabel}>Repartidor Asignado</Text>
               <Text style={styles.detailValue}>
-                {order.repartidor?.nombre || "No asignado"}
+                {order.repartidor
+                  ? `${order.repartidor.nombre} ${order.repartidor.apellido ?? ""}`.trim()
+                  : "No asignado"}
               </Text>
             </View>
-            <TouchableOpacity 
-              style={[styles.contactButton, { backgroundColor: "#25D366" }]}
-              onPress={() => {
-                const nombreRepartidor = order.repartidor?.nombre || "Repartidor";
-                const telefonoRepartidor = order.repartidor?.telefono;
-                const text = encodeURIComponent(`Hola ${nombreRepartidor}, te escribo por el pedido #${order.id} de Aroma Delivery.`);
-                
-                if (telefonoRepartidor) {
-                  const cleanPhone = telefonoRepartidor.replace(/\D/g, "");
-                  const finalPhone = cleanPhone.startsWith("54") ? cleanPhone : `549${cleanPhone}`;
-                  Linking.openURL(`https://wa.me/${finalPhone}?text=${text}`);
-                } else {
-                  Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
-                }
-              }}
-            >
-              <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
+            {order.repartidor?.telefono && (() => {
+              const rawPhone = order.repartidor.telefono.replace(/\D/g, "");
+              const finalPhone = rawPhone.startsWith("54") ? rawPhone : `549${rawPhone}`;
+              const text = encodeURIComponent(`Hola ${order.repartidor.nombre}, te escribo por el pedido #${order.id} de Aroma Delivery.`);
+              return (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.contactButton, { backgroundColor: "#3182CE" }]}
+                    onPress={() => Linking.openURL(`tel:+${finalPhone}`).catch(() => {})}
+                  >
+                    <Ionicons name="call" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.contactButton, { backgroundColor: "#25D366" }]}
+                    onPress={() => {
+                      const url = `whatsapp://send?phone=${finalPhone}&text=${text}`;
+                      Linking.canOpenURL("whatsapp://")
+                        .then((supported) =>
+                          Linking.openURL(supported ? url : `https://wa.me/${finalPhone}?text=${text}`)
+                        )
+                        .catch(() => Alert.alert("Error", "No se pudo abrir WhatsApp."));
+                    }}
+                  >
+                    <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
           </View>
 
           <View

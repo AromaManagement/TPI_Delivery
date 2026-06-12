@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
+import { router } from "expo-router";
 import { repartidorService } from "../services/repartidor.service";
 import { useAuthStore } from "../store/authStore";
 import { useRepartidorStore } from "../store/repartidorStore";
@@ -47,7 +48,7 @@ export function usePedidosDisponiblesController() {
       const updated = await repartidorService.tomarPedido(comanda.id, user.id);
       setPedidoActivo(updated);
       setPedidos((prev) => prev.filter((p) => p.id !== comanda.id));
-      Alert.alert("Pedido tomado", "El pedido fue asignado a vos.");
+      router.replace("/(repartidor)/mi-entrega" as any);
     } catch (error: any) {
       Alert.alert("Error", error?.message || "No se pudo tomar el pedido.");
     }

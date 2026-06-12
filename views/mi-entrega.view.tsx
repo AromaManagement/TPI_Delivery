@@ -116,10 +116,28 @@ export function MiEntregaView() {
         .join(", ")
     : "Sin dirección";
 
+  const telefonoCliente = cliente?.telefono?.replace(/\D/g, "") ?? null;
+  const finalPhoneCliente = telefonoCliente
+    ? (telefonoCliente.startsWith("54") ? telefonoCliente : `549${telefonoCliente}`)
+    : null;
+  const nombreCliente = cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente";
+  const whatsappText = encodeURIComponent(
+    `Hola ${nombreCliente}, soy tu repartidor de Aroma Delivery y voy en camino con tu pedido #${pedidoActivo.id}.`
+  );
+
+  const handleWhatsapp = () => {
+    if (!finalPhoneCliente) return;
+    const url = `whatsapp://send?phone=${finalPhoneCliente}&text=${whatsappText}`;
+    Linking.canOpenURL("whatsapp://")
+      .then((supported) =>
+        Linking.openURL(supported ? url : `https://wa.me/${finalPhoneCliente}?text=${whatsappText}`)
+      )
+      .catch(() => {});
+  };
+
   const handleLlamar = () => {
-    const nombreCliente = cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente";
-    const text = encodeURIComponent(`Hola ${nombreCliente}, soy tu repartidor de Aroma Delivery y voy en camino con tu pedido #${pedidoActivo.id}.`);
-    Linking.openURL(`https://wa.me/5492610000000?text=${text}`);
+    if (!finalPhoneCliente) return;
+    Linking.openURL(`tel:+${finalPhoneCliente}`).catch(() => {});
   };
 
   return (
@@ -149,12 +167,22 @@ export function MiEntregaView() {
                   ? `${cliente.nombre} ${cliente.apellido}`
                   : "Cliente"}
               </Text>
-              <TouchableOpacity 
-                style={[styles.callButton, { backgroundColor: "#25D366" }]} 
-                onPress={handleLlamar}
-              >
-                <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
-              </TouchableOpacity>
+              {telefonoCliente && (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.callButton, { backgroundColor: "#3182CE" }]}
+                    onPress={handleLlamar}
+                  >
+                    <Ionicons name="call" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.callButton, { backgroundColor: "#25D366" }]}
+                    onPress={handleWhatsapp}
+                  >
+                    <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         </View>

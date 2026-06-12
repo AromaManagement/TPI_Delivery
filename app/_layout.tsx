@@ -21,13 +21,15 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
   const pathname = usePathname();
   const prevAuthRef = React.useRef<boolean | null>(null);
 
-  // Only redirect when auth state actually changes value, not on every render
+  // Only redirect when auth state actually changes value, not on every render.
+  // Wait for AsyncStorage hydration first to avoid flashing the login screen.
   useEffect(() => {
+    if (!hasHydrated) return;
     if (prevAuthRef.current === isAuthenticated) return;
-    const wasAuth = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
 
     const timeout = setTimeout(() => {
@@ -62,7 +64,7 @@ export default function RootLayout() {
     }, 100);
 
     return () => clearTimeout(timeout);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, hasHydrated]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

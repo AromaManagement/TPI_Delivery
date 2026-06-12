@@ -2,6 +2,14 @@ import { Comanda } from "../models";
 import { api } from "./api";
 
 export const comandaService = {
+  getHistorial: async (): Promise<Comanda[]> => {
+    try {
+      return await api.get<Comanda[]>("/comandas/historial");
+    } catch {
+      return [];
+    }
+  },
+
   // Check if there is an active order
   getActiveOrder: async (): Promise<Comanda | null> => {
     try {
@@ -28,9 +36,9 @@ export const comandaService = {
         metodoPago: metodoPago,
       };
       return await api.post<Comanda>("/comandas", body);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating order:", error);
-      throw new Error("Failed to create order. Please try again later.");
+      throw new Error(error?.message || "No se pudo crear el pedido. Intentá de nuevo.");
     }
   },
 };
